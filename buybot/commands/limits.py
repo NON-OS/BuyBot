@@ -1,0 +1,16 @@
+import re
+
+EMOJI_ID_RE = re.compile(r"^\d{1,32}$")
+LINK_NAME_RE = re.compile(r"^[\w .!$&()+-]{1,24}$")
+
+MAX_LINKS = 6
+MAX_EMOJI_CHARS = 8
+MAX_LINK_CHARS = 200
+TEST_COOLDOWN = 10.0
+ADMIN_CACHE_SECONDS = 600
+
+MIN_USD_RANGE = (0.0, 1_000_000.0)
+STEP_RANGE = (1.0, 1_000_000.0)
+BAR_RANGE = (1, 200)
+TIER_RANGE = (1.0, 100_000_000.0)
+TEST_RANGE = (1.0, 10_000_000.0)
