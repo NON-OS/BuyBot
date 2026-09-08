@@ -18,6 +18,13 @@ from .media import FIELD, MAX_UPLOAD_BYTES, METHOD
 log = logging.getLogger("buybot.tg")
 
 TG_EMOJI_RE = re.compile(r'<tg-emoji emoji-id="[^"]*">(.*?)</tg-emoji>', re.S)
+# Only the tags Telegram itself understands, so text like "<tier|all>" survives.
+TAG_RE = re.compile(r"</?(?:b|strong|i|em|u|ins|s|strike|del|a|code|pre|span|blockquote|tg-emoji)\b[^>]*>", re.I)
+
+
+def strip_html(text: str) -> str:
+    plain = TAG_RE.sub("", TG_EMOJI_RE.sub(r"\1", text))
+    return plain.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 class TelegramError(RuntimeError):
     def __init__(self, code: int, description: str):
@@ -115,6 +122,12 @@ class Telegram:
                 self.custom_emoji_ok = False
                 params[text_field] = TG_EMOJI_RE.sub(r"\1", text)
                 return await self.api(method, files=files, parse_mode="HTML", reply_markup=markup, **params)
+            if exc.code == 400 and "parse entities" in exc.description:
+                # An unescaped angle bracket somewhere in the text. Send it as
+                # plain text rather than dropping the message.
+                log.warning("HTML rejected (%s); sending as plain text", exc.description)
+                params[text_field] = strip_html(text)
+                return await self.api(method, files=files, reply_markup=markup, **params)
             raise
 
     async def pin(self, chat_id: int, message_id: int) -> None:

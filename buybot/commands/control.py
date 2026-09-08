@@ -40,7 +40,7 @@ class ControlCommands:
 
     async def cmd_setmedia(self, args, reply, msg) -> str:
         if not reply:
-            return "Reply to a GIF, MP4, photo or sticker with /setmedia <tier|all>."
+            return "Reply to a GIF, MP4, photo or sticker with /setmedia followed by a tier, or all."
         found = media_from_message(reply)
         if not found:
             return "That message has no supported media."
