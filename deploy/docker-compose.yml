@@ -1,0 +1,21 @@
+services:
+  buybot:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: nox-buybot:latest
+    env_file: ../.env
+    restart: unless-stopped
+    stop_grace_period: 20s
+    volumes:
+      - buybot-state:/app/state
+    environment:
+      STATE_FILE: /app/state/state.json
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  buybot-state:

@@ -1,0 +1,40 @@
+name: Bug report
+description: Something the bot does wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Set ...
+        2. Send ...
+        3. The bot ...
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: /status output
+      description: Paste it here. It shows the cursor, the settings and the RPC limits.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines
+      description: Remove your bot token and RPC URL first.
+      render: text
+  - type: input
+    id: env
+    attributes:
+      label: Python version and RPC provider
+      placeholder: "3.12, Alchemy"
+    validations:
+      required: true

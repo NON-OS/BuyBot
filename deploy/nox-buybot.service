@@ -1,0 +1,19 @@
+[Unit]
+Description=NOX Telegram buybot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nox
+WorkingDirectory=/opt/nox-buybot
+EnvironmentFile=/opt/nox-buybot/.env
+ExecStart=/usr/bin/python3 -m buybot
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/nox-buybot
+
+[Install]
+WantedBy=multi-user.target

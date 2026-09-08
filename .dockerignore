@@ -1,0 +1,11 @@
+.git
+.github
+.ruff_cache
+__pycache__
+*.py[cod]
+.env
+state.json
+docs
+tests
+media/buy-*
+media/.logo-*

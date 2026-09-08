@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Tests on Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: python -m unittest discover -s tests -t . -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install linters
+        run: pip install ruff
+      - name: Ruff
+        run: ruff check buybot tools tests
+      - name: Repository hygiene
+        run: python tools/check_hygiene.py
+
+  media:
+    name: Media renders
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin ffmpeg
+          pip install -r requirements.txt
+      - name: Render animations
+        run: python tools/make_media.py --size 256 --frames 12
+      - name: Check outputs exist
+        run: |
+          for tier in small medium large whale; do
+            test -s "media/buy-$tier.gif" || { echo "missing media/buy-$tier.gif"; exit 1; }
+            test -s "media/buy-$tier.mp4" || { echo "missing media/buy-$tier.mp4"; exit 1; }
+          done
+      - name: Render emoji
+        run: python tools/make_emoji.py
+
+  startup:
+    name: Startup validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Refuses to start without configuration
+        run: |
+          if python -m buybot; then
+            echo "expected a non-zero exit without configuration"
+            exit 1
+          fi
+      - name: Rejects a malformed token
+        run: |
+          if BOT_TOKEN=nope CHAT_ID=-100123 RPC_HTTP=https://example.invalid python -m buybot; then
+            echo "expected a non-zero exit for a malformed token"
+            exit 1
+          fi

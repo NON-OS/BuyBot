@@ -1,0 +1,35 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "deploy/**"
+      - "requirements.txt"
+      - "buybot/**"
+      - "tools/**"
+
+jobs:
+  build:
+    name: Image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: false
+          load: true
+          tags: nox-buybot:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Image starts and validates its configuration
+        run: |
+          if docker run --rm nox-buybot:ci; then
+            echo "expected a non-zero exit without configuration"
+            exit 1
+          fi
