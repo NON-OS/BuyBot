@@ -19,6 +19,12 @@ log = logging.getLogger("buybot.watch")
 
 MAX_BLOCKS_PER_SCAN = 2000
 COALESCE_SECONDS = 0.25
+# Never scan blocks older than this behind the head. The cursor scan only backs
+# up the live WebSocket feed over brief gaps, so requesting older ranges buys
+# nothing and, on a pruned public node, is rejected as an archive request. When
+# the cursor falls further behind (a long outage), skip forward instead: the
+# live feed carries current buys, and replaying an old range would stall here.
+MAX_LOOKBACK_BLOCKS = 120
 
 
 class Watcher:
@@ -93,6 +99,11 @@ class Watcher:
             if target <= self.state.last_block:
                 return
             frm = self.state.last_block + 1
+            floor = target - MAX_LOOKBACK_BLOCKS
+            if frm < floor:
+                log.warning("cursor %d is %d blocks behind head %d; skipping to %d, live feed covers the gap",
+                            self.state.last_block, target - self.state.last_block, target, floor)
+                frm = floor
             to = min(target, frm + MAX_BLOCKS_PER_SCAN - 1)
             buys = await self.swaps.in_range(frm, to)
             self.note_sells(self.swaps.last_sells)

@@ -102,3 +102,46 @@ class HandleBuyTests(unittest.IsolatedAsyncioTestCase):
         higher.price_usd = Decimal("0.9")
         await self.watcher.handle_buy(higher)
         self.assertTrue(self.poster.posted[1][1]["ath"])
+
+
+class FakeSwaps:
+    def __init__(self):
+        self.ranges = []
+        self.last_sells = 0
+
+    async def in_range(self, frm, to):
+        self.ranges.append((frm, to))
+        return []
+
+
+class CursorScanTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.watcher, self.state, self.tg, self.poster = make_watcher(Path(self.dir.name))
+        self.swaps = FakeSwaps()
+        self.watcher.swaps = self.swaps
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    async def test_far_behind_cursor_skips_forward_not_archive(self):
+        # Cursor 25000 blocks behind head must not request an archive range.
+        self.state.last_block = 1_000_000
+        head = 1_025_000
+        await self.watcher.scan_to(head)
+        frm, to = self.swaps.ranges[-1]
+        from buybot.watcher import MAX_LOOKBACK_BLOCKS
+        self.assertGreaterEqual(frm, head - MAX_LOOKBACK_BLOCKS)
+        self.assertEqual(to, head)
+        self.assertGreater(self.state.last_block, 1_000_000)
+
+    async def test_recent_cursor_scans_the_real_gap(self):
+        self.state.last_block = 1_024_990
+        head = 1_025_000
+        await self.watcher.scan_to(head)
+        self.assertEqual(self.swaps.ranges[-1], (1_024_991, 1_025_000))
+
+    async def test_nothing_new_no_scan(self):
+        self.state.last_block = 1_025_000
+        await self.watcher.scan_to(1_025_000)
+        self.assertEqual(self.swaps.ranges, [])
