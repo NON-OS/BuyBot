@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 
 from ..format import fmt_usd
+from ..render import DEFAULT_EMOJI
 from .limits import (
     BAR_RANGE,
     EMOJI_ID_RE,
@@ -73,8 +74,8 @@ class AppearanceCommands:
             settings.custom_emoji_id = emoji_id
             settings.emoji = glyph if 0 < len(glyph) <= MAX_EMOJI_CHARS else "🟢"
             self.tg.custom_emoji_ok = True
-            return (f"Premium emoji set (id <code>{emoji_id}</code>). Telegram renders custom emoji only "
-                    "for bots that own a Fragment username, otherwise the standard emoji is used.")
+            return (f"Bar emoji set (id <code>{emoji_id}</code>). "
+                    "Where it can't be shown, the standard emoji is used.")
         if args:
             glyph = args[0]
             if len(glyph) > MAX_EMOJI_CHARS or any(c in glyph for c in "<>&"):
@@ -82,7 +83,48 @@ class AppearanceCommands:
             settings.emoji = glyph
             settings.custom_emoji_id = ""
             return f"Bar emoji set to {html.escape(glyph)}."
-        return "Usage: /setemoji 🟢, or reply to a message containing a premium emoji."
+        return "Usage: /setemoji 🟢, or reply to a message containing the emoji you want."
+
+    async def cmd_emoji(self, args, reply, msg) -> str:
+        """Point any message emoji slot at a chosen emoji, or reset it.
+
+        /emoji                 list the slots and which are customised
+        /emoji <slot>          reply to (or include) the emoji to use for it
+        /emoji <slot> clear    restore the standard emoji for that slot
+        """
+        settings = self.st.settings
+        if not args:
+            customised = [k for k in DEFAULT_EMOJI if settings.emojis.get(k, "").isdigit()]
+            out = [
+                "<b>Emoji settings</b>",
+                "Set one: reply to a message with the emoji, then /emoji &lt;slot&gt;.",
+                "Reset one: /emoji &lt;slot&gt; clear.",
+                "",
+                "<b>Slots:</b> " + " ".join(sorted(DEFAULT_EMOJI)),
+            ]
+            if customised:
+                out += ["", "<b>Customised:</b> " + ", ".join(sorted(customised))]
+            return "\n".join(out)
+
+        slot = args[0].lower()
+        if slot not in DEFAULT_EMOJI:
+            return "Unknown slot. Send /emoji to list them."
+        std = html.escape(DEFAULT_EMOJI[slot])
+        if len(args) > 1 and args[1].lower() in ("clear", "reset", "off", "default"):
+            settings.emojis.pop(slot, None)
+            return f"Slot <b>{slot}</b> reset to the standard emoji {std}."
+
+        source = reply or msg
+        custom = [e for e in source.get("entities", []) if e.get("type") == "custom_emoji"]
+        if not custom:
+            return (f"Reply to a message with the emoji you want, then send /emoji {slot} "
+                    f"(or /emoji {slot} clear to restore {std}).")
+        emoji_id = str(custom[0].get("custom_emoji_id", ""))
+        if not EMOJI_ID_RE.match(emoji_id):
+            return "That emoji id looks invalid."
+        settings.emojis[slot] = emoji_id
+        self.tg.custom_emoji_ok = True
+        return f"Slot <b>{slot}</b> set to your emoji (id <code>{emoji_id}</code>)."
 
     async def cmd_emojiid(self, args, reply, msg) -> str:
         source = reply or msg
@@ -90,8 +132,8 @@ class AppearanceCommands:
                if e.get("type") == "custom_emoji"]
         ids = [i for i in ids if EMOJI_ID_RE.match(i)]
         if not ids:
-            return "No premium emoji found in that message."
-        return "Premium emoji ids:\n" + "\n".join(f"<code>{i}</code>" for i in ids)
+            return "No custom emoji found in that message."
+        return "Emoji ids:\n" + "\n".join(f"<code>{i}</code>" for i in ids)
 
     async def cmd_toggle(self, args, reply, msg) -> str:
         key = TOGGLES.get(args[0].lower() if args else "")

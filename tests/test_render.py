@@ -27,6 +27,20 @@ class BuyMessageTests(unittest.TestCase):
         self.assertIn("Position:</b> +", text)
         self.assertNotIn("New Holder", text)
 
+    def test_emoji_slot_override_uses_custom_with_fallback(self):
+        st = State()
+        st.settings.emojis["spent"] = "5111111111111111111"
+        text, _ = render(buy(500), st)
+        self.assertIn('<tg-emoji emoji-id="5111111111111111111">💵</tg-emoji>', text)
+        stripped = TG_EMOJI_RE.sub(r"\1", text)
+        self.assertIn("💵", stripped)
+        self.assertNotIn("tg-emoji", stripped)
+
+    def test_unset_slots_use_standard_emoji(self):
+        text, _ = render(buy(500), State())
+        self.assertIn("💵", text)
+        self.assertNotIn("tg-emoji", text)
+
     def test_unknown_router_is_omitted(self):
         text, _ = render(buy(500, router="0x00000000000000000000000000000000deadbeef"), State())
         self.assertNotIn("Via:", text)

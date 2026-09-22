@@ -24,17 +24,18 @@ class Reporter:
         head = await self.rpc.block_number()
         up = int(time.time() - self.started)
         media = ", ".join(f"{t}:{self.state.media[t]['kind']}" for t in self.state.media) or "bundled defaults"
-        premium = f" (premium {s.custom_emoji_id})" if s.custom_emoji_id else ""
+        custom = f" (custom {s.custom_emoji_id})" if s.custom_emoji_id else ""
+        slots = sum(1 for v in s.emojis.values() if v.isdigit())
         return (
             "<b>NOX buybot</b>\n"
             f"Uptime {up // 3600}h {(up % 3600) // 60}m, head {head}, cursor {self.state.last_block}, "
             f"lag {max(0, head - self.state.last_block)} blocks\n"
             f"Posting: {'paused' if s.paused else 'live'}. Buys posted: {self.state.total_buys}\n"
-            f"Min {fmt_usd(s.min_usd)}, step {fmt_usd(s.emoji_step_usd)}, max {s.emoji_max}, emoji {s.emoji}{premium}\n"
+            f"Min {fmt_usd(s.min_usd)}, step {fmt_usd(s.emoji_step_usd)}, max {s.emoji_max}, emoji {s.emoji}{custom}\n"
             f"Tiers: medium {fmt_usd(s.tier_usd['medium'])}, large {fmt_usd(s.tier_usd['large'])}, "
             f"whale {fmt_usd(s.tier_usd['whale'])}\n"
             f"Media: {media}\n"
-            f"Premium emoji allowed: {'yes' if self.tg.custom_emoji_ok else 'no, needs a Fragment username'}\n"
+            f"Custom emoji: {'on' if self.tg.custom_emoji_ok else 'off (standard emoji shown)'}, {slots} slot(s) set\n"
             f"RPC {self.rpc.host()}, log span {self.rpc.max_log_span}, batch {self.rpc.batch_size}"
         )
 

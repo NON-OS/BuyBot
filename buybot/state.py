@@ -32,6 +32,9 @@ class Settings:
     emoji_step_usd: float = 25.0
     emoji_max: int = 60
     custom_emoji_id: str = ""
+    # Per-slot emoji overrides: slot name -> custom emoji id. A slot left unset
+    # falls back to the standard emoji baked into the message.
+    emojis: dict[str, str] = field(default_factory=dict)
     tier_usd: dict[str, float] = field(default_factory=lambda: {"medium": 250.0, "large": 1000.0, "whale": 5000.0})
     show_position: bool = True
     show_market: bool = True

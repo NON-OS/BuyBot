@@ -6,7 +6,7 @@ HELP = """<b>NOX buybot commands</b> (group admins only)
 /pause, /resume  stop or start posting
 
 <b>Appearance</b>
-/setemoji 🟢  bar emoji (reply to a message with a premium emoji to use it)
+/setemoji 🟢  bar emoji (reply to a message with the emoji to use it)
 /setstep 25  USD per emoji
 /setmax 60  max emojis in the bar
 /setmin 25  ignore buys below this USD value
@@ -15,4 +15,9 @@ HELP = """<b>NOX buybot commands</b> (group admins only)
 /clearmedia tier|all
 /toggle position|market|buttons|pinwhales
 /addlink Trending https://...  and  /dellink Trending
-/emojiid  reply to a message to list its premium emoji ids"""
+
+<b>Emoji settings</b>
+/emoji  list the emoji slots and which are customised
+/emoji &lt;slot&gt;  reply to a message with an emoji to use it for that slot
+/emoji &lt;slot&gt; clear  restore the standard emoji
+/emojiid  reply to a message to list its emoji ids"""
